@@ -124,7 +124,8 @@ export const getStaticPaths: GetStaticPaths = async (ctx) => {
     // esos numeros seran inyectados como params con ids
     paths: pokemon151.map((id) => ({ params: { id } })),
     // si no existe unregistro devolverá un 404
-    fallback: false,
+    /* fallback: false, */
+    fallback: "blocking",
   };
 };
 
@@ -133,11 +134,33 @@ export const getStaticPaths: GetStaticPaths = async (ctx) => {
 export const getStaticProps: GetStaticProps = async ({ params }) => {
   const { id } = params as { id: string };
 
+  const pokemon = await getPokemonsInfo(id);
+
+  // si no encuentra un pokemon
+  if (!pokemon) {
+    return {
+      redirect: {
+        // lo redirije al home
+        destination: "/",
+        // esto indica que si permanentemente redirecciona al home si este registro no existe
+        // se coloca en false porque a futuro ese registro puede existir
+        permanent: false,
+      },
+    };
+  }
+
   // retorna las props
   return {
     props: {
-      pokemon: await getPokemonsInfo(id),
+      pokemon,
     },
+    /* 
+    Static site regeneration:
+    Next intentará regenerar la página:
+    - Cuando se haga una petición
+    - Cada x segundos (SIEMPRE EN SEGUNDOS)
+    */
+    revalidate: 86400, // se calculo para que se actualice cada 24hrs - 60seg * 60seg * 24seg = 86400seg
   };
 };
 
